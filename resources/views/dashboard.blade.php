@@ -45,37 +45,61 @@
             </div>
         </div>
 
-        <!-- Generate QR -->
-        <div id="generateContent" class="tab-content hidden">
-            <h2 class="text-xl font-bold mb-6 text-gray-800">Generate QR Code</h2>
-            <div class="flex items-center gap-4 mb-8 justify-center flex-wrap">
-                <select id="kelas"
-                    class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none shadow-sm">
-                    <option value="X-BN-1">X-BN-1</option>
-                    <option value="X-BN-2">X-BN-2</option>
-                    <option value="X-TJKT-1">X-TJKT-1</option>
-                    <option value="X-TJKT-2">X-TJKT-2</option>
-                </select>
-                <select id="jurusan"
-                    class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none shadow-sm">
-                    <option value="BN">Busana</option>
-                    <option value="TJKT">TJKT</option>
-                    <option value="TO">TO</option>
-                </select>
-                <input type="number" id="jumlah" placeholder="Masukkan jumlah (misal: 300)"
-                    class="w-72 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none text-center shadow-sm">
-                <button id="generateBtn"
-                    class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg transition">Generate</button>
-            </div>
-            <div id="qrContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-6 justify-items-center">
-            </div>
-            <div class="text-center">
-                <button onclick="window.print()" id="printBtn"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg transition hidden">
-                    🖨️ Cetak / Simpan PDF
-                </button>
-            </div>
+       <!-- Generate QR -->
+<div id="generateContent" class="tab-content hidden">
+    <h2 class="text-xl font-bold mb-6 text-gray-800">Generate QR Code</h2>
+
+    <!-- Form Generate Token -->
+    <div class="flex items-center gap-4 mb-8 justify-center flex-wrap">
+        <select id="kelas"
+            class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none shadow-sm">
+            <option value="X-BN-1">X-BN-1</option>
+            <option value="X-BN-2">X-BN-2</option>
+            <option value="X-TJKT-1">X-TJKT-1</option>
+            <option value="X-TJKT-2">X-TJKT-2</option>
+        </select>
+        <select id="jurusan"
+            class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none shadow-sm">
+            <option value="BN">Busana</option>
+            <option value="TJKT">TJKT</option>
+            <option value="TO">TO</option>
+        </select>
+        <input type="number" id="jumlah" placeholder="Masukkan jumlah (misal: 300)"
+            class="w-72 border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none text-center shadow-sm">
+        <button id="generateBtn"
+            class="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg transition">Generate</button>
+    </div>
+
+    <!-- Container hasil QR -->
+    <div id="qrContainer" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 mb-6 justify-items-center"></div>
+
+    <div class="text-center">
+        <button onclick="window.print()" id="printBtn"
+            class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg transition hidden">
+            🖨️ Cetak / Simpan PDF
+        </button>
+    </div>
+
+    <!-- === CETAK QR BERDASARKAN KELAS === -->
+    <div class="mt-10 text-center border-t pt-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Cetak QR Berdasarkan Kelas</h3>
+        <div class="flex justify-center items-center gap-4 flex-wrap">
+            <select id="kelasCetak"
+                class="border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-green-500 focus:outline-none shadow-sm">
+                <option value="X-BN-1">X-BN-1</option>
+                <option value="X-BN-2">X-BN-2</option>
+                <option value="X-TJKT-1">X-TJKT-1</option>
+                <option value="X-TJKT-2">X-TJKT-2</option>
+            </select>
+            <button id="cetakKelasBtn"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-lg transition">
+                🖨️ Cetak QR Kelas
+            </button>
         </div>
+    </div>
+</div>
+
+
 
         <!-- Kandidat Management -->
         <div id="kandidatContent" class="tab-content hidden">
@@ -306,6 +330,86 @@
                     }
                 }
             }
+
+            // === GENERATE TOKEN SECTION ===
+const generateBtn = document.getElementById("generateBtn");
+const qrContainer = document.getElementById("qrContainer");
+
+if (generateBtn) {
+    generateBtn.addEventListener("click", async () => {
+        const kelas = document.getElementById("kelas").value;
+        const jurusan = document.getElementById("jurusan").value;
+        const jumlah = document.getElementById("jumlah").value;
+
+        if (!kelas || !jurusan || !jumlah || jumlah <= 0) {
+            Swal.fire({
+                icon: "warning",
+                title: "Input tidak lengkap",
+                text: "Harap isi semua data (kelas, jurusan, dan jumlah)",
+            });
+            return;
+        }
+
+        try {
+            const res = await fetch("/generate-token", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                },
+                body: JSON.stringify({ kelas, jurusan, jumlah })
+            });
+
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+            const tokens = await res.json();
+            qrContainer.innerHTML = "";
+
+            tokens.forEach(t => {
+    const card = document.createElement("div");
+    card.className =
+        "bg-white shadow-md rounded-xl p-4 flex flex-col items-center justify-center border border-gray-200 hover:shadow-lg transition";
+
+    const qr = document.createElement("div");
+   // QR code akan berisi URL lengkap, bukan token mentah
+new QRCode(qr, { text: t.url, width: 120, height: 120 });
+
+
+    const p = document.createElement("p");
+    p.className = "text-xs mt-3 break-all text-center text-gray-700 font-mono";
+    p.textContent = t.token;
+
+    card.appendChild(qr);   
+    card.appendChild(p);
+    qrContainer.appendChild(card);
+});
+            Swal.fire({
+                icon: "success",
+                title: "Berhasil!",
+                text: "Token berhasil digenerate",
+                timer: 1500,
+                showConfirmButton: false
+            });
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: "error",
+                title: "Gagal",
+                text: "Terjadi kesalahan saat generate token"
+            });
+        }
+    });
+}
+
+// === CETAK QR PER KELAS ===
+const cetakKelasBtn = document.getElementById("cetakKelasBtn");
+if (cetakKelasBtn) {
+    cetakKelasBtn.addEventListener("click", () => {
+        const kelas = document.getElementById("kelasCetak").value;
+        window.open(`/qr-pdf/${kelas}`, "_blank");
+    });
+}
+
         });
     </script>
 @endpush

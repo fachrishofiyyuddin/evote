@@ -21,13 +21,23 @@
 @push('scripts')
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
-        function onScanSuccess(decodedText) {
-            window.location.href = decodedText;
+    function onScanSuccess(decodedText) {
+        let url = decodedText;
+
+        // Jika decodedText bukan URL lengkap (http/https) dan belum ada "vote/" di depan, tambahkan
+        if (!/^https?:\/\//i.test(decodedText) && !decodedText.startsWith('vote/')) {
+            url = '/vote/' + decodedText;
         }
-        let scanner = new Html5QrcodeScanner("reader", {
-            fps: 10,
-            qrbox: 250
-        });
-        scanner.render(onScanSuccess);
-    </script>
+
+        window.location.href = url;
+    }
+
+    let scanner = new Html5QrcodeScanner("reader", {
+        fps: 10,
+        qrbox: 250
+    });
+
+    scanner.render(onScanSuccess);
+</script>
+
 @endpush

@@ -17,31 +17,36 @@ class DashboardController extends Controller
         return view('dashboard', compact('candidates'));
     }
 
-    // Generate token QR secara bulk
     public function generateToken(Request $request)
-    {
-        $request->validate([
-            'kelas' => 'required|string',
-            'jurusan' => 'required|string',
-            'jumlah' => 'required|integer|min:1'
+{
+    $request->validate([
+        'kelas' => 'required|string',
+        'jurusan' => 'required|string',
+        'jumlah' => 'required|integer|min:1'
+    ]);
+
+    $tokens = [];
+    for ($i = 1; $i <= $request->jumlah; $i++) {
+        $kodeUnik = strtoupper(substr(bin2hex(random_bytes(3)), 0, 5));
+        $nomorUrut = str_pad($i, 2, '0', STR_PAD_LEFT);
+
+        // Simpan token ke DB
+        $token = Token::create([
+            'token' => "EVOTE-OSIS-2025-{$request->kelas}-{$kodeUnik}-{$nomorUrut}",
+            'kelas' => $request->kelas,
+            'jurusan' => $request->jurusan
         ]);
 
-        $tokens = [];
-        for ($i = 1; $i <= $request->jumlah; $i++) {
-            $kodeUnik = strtoupper(substr(bin2hex(random_bytes(3)), 0, 5));
-            $nomorUrut = str_pad($i, 2, '0', STR_PAD_LEFT);
-            $token = "EVOTE-OSIS-2025-{$request->kelas}-{$kodeUnik}-{$nomorUrut}";
+        // Tambahkan properti URL lengkap untuk QR, TIDAK disimpan ke DB
+        $token->url = route('vote', ['token' => $token->token]);
 
-            // Simpan token ke DB
-            $tokens[] = Token::create([
-                'token' => $token,
-                'kelas' => $request->kelas,
-                'jurusan' => $request->jurusan
-            ]);
-        }
-
-        return response()->json($tokens);
+        // Masukkan ke array untuk response
+        $tokens[] = $token;
     }
+
+    return response()->json($tokens);
+}
+
 
     // Tambah kandidat baru
     public function addCandidate(Request $request)
